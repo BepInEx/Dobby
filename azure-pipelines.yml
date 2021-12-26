@@ -1,0 +1,165 @@
+trigger:
+- master
+
+jobs:
+  - job: WindowsBuild
+    displayName: Windows Builds
+    pool:
+      vmImage: windows-latest
+    steps:
+      - script: |
+          cmake -DCMAKE_BUILD_TYPE=Release -DDynamicBinaryInstrument=OFF -DPlugin.SymbolResolver=OFF -A x64 -B "$(Build.SourcesDirectory)\build64"
+          cmake -DCMAKE_BUILD_TYPE=Release -DDynamicBinaryInstrument=OFF -DPlugin.SymbolResolver=OFF -A Win32 -B "$(Build.SourcesDirectory)\build32"
+        displayName: Init CMake
+
+      - task: MSBuild@1
+        inputs:
+          solution: '$(Build.SourcesDirectory)\build32\Dobby.sln'
+          msbuildArchitecture: 'x86'
+          configuration: 'Release'
+          msbuildArguments: '-t:dobby'
+
+      - task: MSBuild@1
+        inputs:
+          solution: '$(Build.SourcesDirectory)\build64\Dobby.sln'
+          msbuildArchitecture: 'x64'
+          configuration: 'Release'
+          msbuildArguments: '-t:dobby'
+
+
+      - script: |
+          mkdir "$(Build.SourcesDirectory)\build_result"
+          copy "$(Build.SourcesDirectory)\build32\Release\dobby.dll" "$(Build.SourcesDirectory)\build_result\dobby_x86.dll"
+          copy "$(Build.SourcesDirectory)\build64\Release\dobby.dll" "$(Build.SourcesDirectory)\build_result\dobby_x64.dll"
+        
+      - task: ArchiveFiles@2
+        inputs:
+          rootFolderOrFile: '$(Build.SourcesDirectory)\build_result'
+          includeRootFolder: true
+          archiveType: 'zip'
+          archiveFile: '$(Build.ArtifactStagingDirectory)\win_$(Build.BuildId).zip'
+          replaceExistingArchive: true
+
+      - task: PublishBuildArtifacts@1
+        inputs:
+          PathtoPublish: '$(Build.ArtifactStagingDirectory)\win_$(Build.BuildId).zip'
+          ArtifactName: 'dobby_win'
+          publishLocation: 'Container'
+
+  - job: LinuxBuild
+    displayName: 'Build Linux'
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+      - script: |
+          sudo apt-get update;
+          sudo apt-get -y install gcc-multilib g++-multilib libc6-dev-i386
+        displayName: 'getting deps'
+
+      - script: |
+          cmake -DCMAKE_BUILD_TYPE=Release -DDynamicBinaryInstrument=OFF -DPlugin.SymbolResolver=OFF -B $(Build.SourcesDirectory)/build64
+          cmake -DCMAKE_CXX_FLAGS="-m32" -DCMAKE_C_FLAGS="-m32" -DCMAKE_SHARED_LINKER_FLAGS="-m32" -DCMAKE_BUILD_TYPE=Release -DDynamicBinaryInstrument=OFF -DPlugin.SymbolResolver=OFF -B $(Build.SourcesDirectory)/build86
+        displayName: 'init cmake'
+
+      - script: |
+          cd $(Build.SourcesDirectory)/build64 && make dobby
+        displayName: 'build x64'
+
+      - script: |
+          cd $(Build.SourcesDirectory)/build86 && make dobby
+        displayName: 'build x86'
+
+      - script: |
+         cd $(Build.SourcesDirectory) && zip -r linux_$(Build.BuildId).zip build64/*.so build86/*.so
+        displayName: 'Package files'
+
+      - task: PublishBuildArtifacts@1
+        inputs:
+          PathtoPublish: '$(Build.SourcesDirectory)/linux_$(Build.BuildId).zip'
+          ArtifactName: 'dobby_linux'
+          publishLocation: 'Container'
+
+  - job: MacOSBuild # x86 is not allowed on 10.15+ anymore
+    displayName: 'Build MacOS'
+    pool:
+      vmImage: 'macOS-10.14'
+    steps:
+      - script: |
+          sudo installer -pkg /Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_10.14.pkg -target /
+        displayName: 'Install macOS SDK Headers'
+
+      - script: |
+          cmake -DCMAKE_BUILD_TYPE=Release -DDynamicBinaryInstrument=OFF -DPlugin.SymbolResolver=OFF -B $(Build.SourcesDirectory)/build64
+          cmake -DCMAKE_CXX_FLAGS="-m32" -DCMAKE_C_FLAGS="-m32" -DCMAKE_SHARED_LINKER_FLAGS="-m32" -DCMAKE_BUILD_TYPE=Release -DDynamicBinaryInstrument=OFF -DPlugin.SymbolResolver=OFF -DDynamicBinaryInstrument=OFF -B $(Build.SourcesDirectory)/build86
+        displayName: 'init cmake'
+
+      - script: |
+          cd $(Build.SourcesDirectory)/build64 && make dobby
+        displayName: 'build x64'
+
+      - script: |
+          cd $(Build.SourcesDirectory)/build86 && make dobby
+        displayName: 'build x86'
+
+      - script: |
+          cd $(Build.SourcesDirectory) && zip -r macos_$(Build.BuildId).zip build64/*.dylib build86/*.dylib
+        displayName: 'Package files'
+
+      - task: PublishBuildArtifacts@1
+        inputs:
+          PathtoPublish: '$(Build.SourcesDirectory)/macos_$(Build.BuildId).zip'
+          ArtifactName: 'dobby_macos'
+          publishLocation: 'Container'
+
+  - job: collect
+    pool:
+      vmImage: 'ubuntu-latest'
+    dependsOn:
+      - WindowsBuild
+      - MacOSBuild
+      - LinuxBuild
+    steps:
+      - task: DownloadBuildArtifacts@0
+        inputs:
+          buildType: current
+          downloadType: single
+          artifactName: dobby_win
+          downloadPath: $(System.ArtifactsDirectory)
+      
+      - task: DownloadBuildArtifacts@0
+        inputs:
+          buildType: current
+          downloadType: single
+          artifactName: dobby_linux
+          downloadPath: $(System.ArtifactsDirectory)
+
+      - task: DownloadBuildArtifacts@0
+        inputs:
+          buildType: current
+          downloadType: single
+          artifactName: dobby_macos
+          downloadPath: $(System.ArtifactsDirectory)
+
+      - script: |
+          cd $(System.ArtifactsDirectory)
+          ls -la
+          unzip dobby_win/win_$(Build.BuildId).zip
+          unzip dobby_linux/linux_$(Build.BuildId).zip
+          unzip dobby_macos/macos_$(Build.BuildId).zip
+          ls -la
+          mkdir dobby_dist
+          mv build_result/dobby_x64.dll dobby_dist/dobby_x64.dll
+          mv build_result/dobby_x86.dll dobby_dist/dobby_x86.dll
+          mv build64/libdobby.so dobby_dist/libdobby_x64.so
+          mv build86/libdobby.so dobby_dist/libdobby_x86.so
+          mv build64/libdobby.dylib dobby_dist/libdobby_x64.dylib
+          mv build86/libdobby.dylib dobby_dist/libdobby_x86.dylib
+          cd dobby_dist
+          zip -r dobby_$(Build.BuildId).zip *.{dll,so,dylib}
+        displayName: 'build pack'
+
+      - task: PublishBuildArtifacts@1
+        inputs:
+          PathtoPublish: '$(System.ArtifactsDirectory)/dobby_dist/dobby_$(Build.BuildId).zip'
+          ArtifactName: 'dobby'
+          publishLocation: 'Container'
