@@ -49,8 +49,10 @@
 
 #define op3_flag(x, f, o0, o1, o2)                                                                                     \
   {                                                                                                                    \
-    .name = #x, .flags = (f), .operands[0] = {.data = #o0}, .operands[1] = {.data = #o1},                              \
-    .operands[2] = {.data = #o2},                                                                                      \
+    .name = #x, .flags = (f), .operands = {                                                                            \
+      {.data = #o0},                                                                                                   \
+      {.data = #o1},                                                                                                   \
+      {.data = #o2}},                                                                          \
   }
 #define op2_flag(x, f, o0, o1) op3_flag(x, f, o0, o1, __)
 #define op1_flag(x, f, o0) op2_flag(x, f, o0, __)
@@ -445,6 +447,7 @@ static void x86_insn_decode_opcode(x86_insn_reader_t *rd, x86_insn_decode_t *ins
   } else {
     insn_spec = x86_opcode_map_one_byte[opcode];
   }
+  DLOG(0, "[x86 decode] spec: %p", &x86_opcode_map_one_byte[opcode]);
 
   // check sse group
   if (X86_INSN_FLAG_GET_GROUP(insn_spec.flags) > X86_INSN_SSE_GROUP_START) {
@@ -520,8 +523,11 @@ void x86_insn_decode_immediate(x86_insn_reader_t *rd, x86_insn_decode_t *insn, x
   if (conf->mode == 64 && insn->insn_spec.flags & X86_INSN_SPEC_DEFAULT_64_BIT)
     effective_operand_bits = 64;
 
+  DLOG(0, "[x86 decode] effective_operand_bits=%d", effective_operand_bits);
+
   int64_t immediate = 0;
   uint8_t imm_bits = x86_insn_imm_bits(&insn->insn_spec, effective_operand_bits);
+  DLOG(0, "[x86 decode] immediate bits: %d", imm_bits);
   if (imm_bits == 0)
     return;
 
@@ -530,6 +536,8 @@ void x86_insn_decode_immediate(x86_insn_reader_t *rd, x86_insn_decode_t *insn, x
 
   x86_insn_decode_number(rd, imm_bits, &immediate);
   insn->immediate = immediate;
+
+  DLOG(0, "[x86 decode] imm_offs=%p, imm=%p", insn->immediate_offset, insn->immediate);
 }
 
 void x86_insn_decode(x86_insn_decode_t *insn, uint8_t *buffer, x86_options_t *conf) {
@@ -554,7 +562,7 @@ void x86_insn_decode(x86_insn_decode_t *insn, uint8_t *buffer, x86_options_t *co
   }
 
 #if 1
-  DLOG(0, "[x86 insn] %s", insn->insn_spec.name);
+  DLOG(0, "[x86 insn] %s, %p", insn->insn_spec.name, &insn->insn_spec);
 #endif
 
   // set insn length

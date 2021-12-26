@@ -3,6 +3,7 @@
 #include "dobby_internal.h"
 
 Interceptor *Interceptor::priv_interceptor_ = nullptr;
+Interceptor *Interceptor::priv_orig_interceptor_ = nullptr;
 
 Interceptor *Interceptor::SharedInstance() {
   if (Interceptor::priv_interceptor_ == nullptr) {
@@ -10,6 +11,14 @@ Interceptor *Interceptor::SharedInstance() {
     INIT_LIST_HEAD(&Interceptor::priv_interceptor_->hook_entry_list_);
   }
   return Interceptor::priv_interceptor_;
+}
+
+Interceptor *Interceptor::SharedInstanceOriginal() {
+  if (Interceptor::priv_orig_interceptor_ == nullptr) {
+    Interceptor::priv_orig_interceptor_ = new Interceptor();
+    INIT_LIST_HEAD(&Interceptor::priv_orig_interceptor_->hook_entry_list_);
+  }
+  return Interceptor::priv_orig_interceptor_;
 }
 
 HookEntryNode *Interceptor::find_hook_entry_node(void *address) {

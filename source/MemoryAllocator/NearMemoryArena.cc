@@ -143,6 +143,15 @@ static addr_t search_near_blank_page(addr_t pos, size_t alloc_range) {
   return resultPageAddr;
 }
 
+void NearMemoryArena::Destroy(MemoryChunk *chunk) {
+    if (!chunk)
+      return;
+
+    // memory chunk is searched by looking for blank areas in a page => clean the chunk by memsetting the area
+
+    memset(chunk->address, 0, chunk->length);
+}
+
 NearMemoryArena::NearMemoryArena() {
 }
 
@@ -175,7 +184,7 @@ static addr_t search_near_blank_memory_chunk(addr_t pos, size_t alloc_range, int
 #else
           blank_chunk_addr = (uint8_t *)memmem(region.address, region.length, blank_memory, alloc_size);
 #endif
-
+          free(blank_memory);
           if (blank_chunk_addr)
             break;
         }

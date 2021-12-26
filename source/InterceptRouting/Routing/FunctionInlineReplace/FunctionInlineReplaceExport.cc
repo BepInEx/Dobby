@@ -22,6 +22,20 @@ PUBLIC int DobbyHook(void *address, void *replace_call, void **origin_call) {
     }
   }
 
+  // check if was previously hooked and rehook if needed
+  entry = Interceptor::SharedInstanceOriginal()->FindHookEntry(address);
+  if (entry) {
+    FunctionInlineReplaceRouting *route = (FunctionInlineReplaceRouting *)entry->route;
+    if (route->GetTrampolineTarget() != replace_call) {
+      // no need to regenerate relocated buffer because its size and contents are the same
+      // TODO: Check ARM
+      route->SetReplaceCall(replace_call);
+    }
+    Interceptor::SharedInstance()->AddHookEntry(entry);
+    route->Commit();
+    return RS_SUCCESS;
+  }
+
   entry = new HookEntry();
   entry->id = Interceptor::SharedInstance()->GetHookEntryCount();
   entry->type = kFunctionInlineHook;

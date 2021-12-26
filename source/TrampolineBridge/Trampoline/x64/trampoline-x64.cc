@@ -13,7 +13,26 @@
 
 using namespace zz::x64;
 
+struct IndirectStub {
+  addr_t branch_address;
+  void *stub_address;
+};
+
+LiteMutableArray *existing_indirect_stubs;
+
 static void **AllocIndirectStub(addr_t branch_address) {
+  if (!existing_indirect_stubs) {
+    existing_indirect_stubs = new LiteMutableArray(10);
+  }
+
+  LiteCollectionIterator iter(existing_indirect_stubs);
+  IndirectStub *stub = nullptr;
+  while ((stub = reinterpret_cast<IndirectStub *>(iter.getNextObject())) != nullptr) {
+    if (stub->branch_address == branch_address) {
+      return (void **)stub->stub_address;
+    }
+  }
+
   WritableDataChunk *forwardStub = NULL;
 
   forwardStub =
@@ -23,6 +42,10 @@ static void **AllocIndirectStub(addr_t branch_address) {
     return NULL;
   }
 
+  stub = new IndirectStub;
+  stub->branch_address = branch_address;
+  stub->stub_address = forwardStub->address;
+  existing_indirect_stubs->pushObject(reinterpret_cast<LiteObject *>(stub));
   return (void **)forwardStub->address;
 }
 

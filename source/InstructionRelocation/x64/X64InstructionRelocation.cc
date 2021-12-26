@@ -6,6 +6,7 @@
 #include <string.h>
 
 #include "dobby_internal.h"
+#include "MemoryAllocator/NearMemoryArena.h"
 
 #include "InstructionRelocation/x86/x86_insn_decode/x86_insn_decode.h"
 
@@ -71,10 +72,12 @@ static int GenRelocateCodeFixed(void *buffer, AssemblyCodeChunk *origin, Assembl
         __ EmitBuffer((void *)(buffer_cursor + insn.immediate_offset), insn.length - insn.immediate_offset);
       }
     } else if (insn.primary_opcode == 0xE8 || insn.primary_opcode == 0xE9) { // call or jmp rel32
-      DLOG(0, "[x86 relo] jmp or call rel32, %p", buffer_cursor);
+      DLOG(0, "[x86 relo] jmp or call rel32, %p, %d, %d, %d", buffer_cursor, insn.immediate_offset, insn.immediate, insn.length);
 
       dword orig_offset = insn.immediate;
       dword offset = (dword)(curr_orig_ip + orig_offset - curr_relo_ip);
+      DLOG(0, "[x86 relo] cur IP: %p, relo IP: %p, orig_target: %p; new_target: %p", curr_orig_ip, curr_relo_ip,
+           curr_orig_ip + orig_offset, curr_relo_ip + offset);
 
       __ EmitBuffer((void *)buffer_cursor, insn.immediate_offset);
       __ Emit32(offset);
@@ -140,7 +143,8 @@ void GenRelocateCodeAndBranch(void *buffer, AssemblyCodeChunk *origin, AssemblyC
 
 x64_try_again:
   if (relocated->raw_instruction_start() == 0) {
-    cchunk = MemoryArena::AllocateCodeChunk(relo_code_chunk_size);
+    cchunk = NearMemoryArena::AllocateCodeChunk(origin->raw_instruction_start(), (size_t)(1 * 1024 * 1024 * 1024),
+                                                relo_code_chunk_size);
     if (cchunk == nullptr) {
       return;
     }
@@ -150,7 +154,7 @@ x64_try_again:
   int ret = GenRelocateCodeFixed(buffer, origin, relocated);
   if (ret != RT_SUCCESS) {
     // free the cchunk
-    MemoryArena::Destroy(cchunk);
+    //NearMemoryArena::Destroy(cchunk);
 
     relo_code_chunk_size += chunk_size_step;
     relocated->re_init_region_range(0, 0);

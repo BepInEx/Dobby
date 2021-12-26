@@ -14,6 +14,8 @@ class Interceptor {
 public:
   static Interceptor *SharedInstance();
 
+  static Interceptor *SharedInstanceOriginal();
+
   HookEntry *FindHookEntry(void *address);
 
   void AddHookEntry(HookEntry *entry);
@@ -32,6 +34,8 @@ private:
   struct list_head hook_entry_list_;
 
   static Interceptor *priv_interceptor_;
+
+  static Interceptor *priv_orig_interceptor_;
 };
 
 #endif
