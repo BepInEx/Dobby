@@ -1,8 +1,12 @@
 #if defined(__linux__) || defined(__APPLE__)
-
 #include <unistd.h>
 #include <syslog.h>
+#endif
 
+#include "dobby_internal.h"
+#include "Interceptor.h"
+
+#if defined(__linux__) || defined(__APPLE__)
 __attribute__((constructor)) static void ctor() {
   DLOG(-1, "================================");
   DLOG(-1, "Dobby");
@@ -10,11 +14,7 @@ __attribute__((constructor)) static void ctor() {
 
   DLOG(-1, "dobby in debug log mode, disable with cmake flag \"-DDOBBY_DEBUG=OFF\"");
 }
-
 #endif
-
-#include "dobby_internal.h"
-#include "Interceptor.h"
 
 PUBLIC const char *DobbyBuildVersion() {
   return __DOBBY_BUILD_VERSION__;
