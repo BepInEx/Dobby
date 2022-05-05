@@ -153,8 +153,14 @@ int DobbyWrap(void *function_address, PreCallTy pre_call, PostCallTy post_call);
 // return dobby build date
 const char *DobbyBuildVersion();
 
-// replace function
+// hook and commit function
 int DobbyHook(void *address, void *replace_call, void **origin_call);
+
+// prepare trampoline
+int DobbyPrepare(void *address, void *replace_call, void **origin_call);
+
+// commit hook
+int DobbyCommit(void *address);
 
 // dynamic binary instrument for instruction
 // [!!! READ ME !!!]

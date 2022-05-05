@@ -51,6 +51,8 @@ typedef struct {
     void *relocated_origin_function;
   };
 
+  bool is_committed;
+
   AssemblyCodeChunkBuffer origin_chunk_;
 } HookEntry;
 

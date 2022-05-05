@@ -5,12 +5,19 @@
 #include "InterceptRouting/Routing/FunctionInlineReplace/function-inline-replace.h"
 
 PUBLIC int DobbyHook(void *address, void *replace_call, void **origin_call) {
+  int result = DobbyPrepare(address, replace_call, origin_call);
+  if (result != RS_SUCCESS)
+    return result;
+  return DobbyCommit(address);
+}
+
+PUBLIC int DobbyPrepare(void *address, void *replace_call, void **origin_call) {
   if (!address) {
     ERROR_LOG("function address is 0x0");
     return RS_FAILED;
   }
 
-  DLOG(0, "[DobbyHook] Initialize at %p", address);
+  DLOG(0, "[DobbyPrepare] Initialize at %p", address);
 
   // check if already hooked
   HookEntry *entry = Interceptor::SharedInstance()->FindHookEntry(address);
@@ -32,7 +39,7 @@ PUBLIC int DobbyHook(void *address, void *replace_call, void **origin_call) {
       route->SetReplaceCall(replace_call);
     }
     Interceptor::SharedInstance()->AddHookEntry(entry);
-    route->Commit();
+    *origin_call = entry->relocated_origin_function;
     return RS_SUCCESS;
   }
 
@@ -49,8 +56,24 @@ PUBLIC int DobbyHook(void *address, void *replace_call, void **origin_call) {
   // set origin call with relocated function
   *origin_call = entry->relocated_origin_function;
 
+  return RS_SUCCESS;
+}
+
+PUBLIC int DobbyCommit(void *address) {
+  if (!address) {
+    ERROR_LOG("function address is 0x0");
+    return RS_FAILED;
+  }
+
+  // check if already hooked
+  HookEntry *entry = Interceptor::SharedInstance()->FindHookEntry(address);
+  FunctionInlineReplaceRouting *route = (FunctionInlineReplaceRouting *)entry->route;
+  if (entry->is_committed) {
+    ERROR_LOG("function %p already been hooked.", address);
+    return RS_FAILED;
+  }
+
   // code patch & hijack original control flow entry
   route->Commit();
-
   return RS_SUCCESS;
 }
