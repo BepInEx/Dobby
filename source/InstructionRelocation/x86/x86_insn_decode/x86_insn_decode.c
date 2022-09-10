@@ -471,6 +471,9 @@ static void x86_insn_decode_opcode(x86_insn_reader_t *rd, x86_insn_decode_t *ins
     // update the insn spec
     insn_spec.name = group_insn->name;
     insn_spec.flags = group_insn->flags;
+    for (int i = 0; i < sizeof(insn_spec.operands) / sizeof(x86_insn_operand_spec_t); i++) {
+      insn_spec.operands[i] = group_insn->operands[i];
+    }
   }
 
   insn->primary_opcode = opcode;
