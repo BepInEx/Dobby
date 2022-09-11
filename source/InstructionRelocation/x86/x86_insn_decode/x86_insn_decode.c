@@ -447,7 +447,7 @@ static void x86_insn_decode_opcode(x86_insn_reader_t *rd, x86_insn_decode_t *ins
   } else {
     insn_spec = x86_opcode_map_one_byte[opcode];
   }
-  DLOG(0, "[x86 decode] spec: %p", &x86_opcode_map_one_byte[opcode]);
+  DLOG(0, "[x86 decode] spec; opcode: %x; name: %s; flags: %d", opcode, insn_spec.name, insn_spec.flags);
 
   // check sse group
   if (X86_INSN_FLAG_GET_GROUP(insn_spec.flags) > X86_INSN_SSE_GROUP_START) {
@@ -474,6 +474,9 @@ static void x86_insn_decode_opcode(x86_insn_reader_t *rd, x86_insn_decode_t *ins
     for (int i = 0; i < sizeof(insn_spec.operands) / sizeof(x86_insn_operand_spec_t); i++) {
       insn_spec.operands[i] = group_insn->operands[i];
     }
+    DLOG(0, "[x86 decode] modrm_group_spec; group: %d, ins: %d, byte: %x; name: %s; flags: %d", group_ndx, insn_ndx, modrm.byte,
+         insn_spec.name,
+         insn_spec.flags);
   }
 
   insn->primary_opcode = opcode;
@@ -564,10 +567,10 @@ void x86_insn_decode(x86_insn_decode_t *insn, uint8_t *buffer, x86_options_t *co
     x86_insn_decode_immediate(&rd, insn, conf);
   }
 
-#if 1
-  DLOG(0, "[x86 insn] %s, %p", insn->insn_spec.name, &insn->insn_spec);
-#endif
-
   // set insn length
   insn->length = rd.buffer_cursor - rd.buffer;
+
+#if 1
+  DLOG(0, "[x86 insn] opcode: %s, spec: %p, size: %d", insn->insn_spec.name, &insn->insn_spec, insn->length);
+#endif
 }
