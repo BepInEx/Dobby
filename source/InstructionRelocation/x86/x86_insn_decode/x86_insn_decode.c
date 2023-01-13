@@ -451,7 +451,26 @@ static void x86_insn_decode_opcode(x86_insn_reader_t *rd, x86_insn_decode_t *ins
 
   // check sse group
   if (X86_INSN_FLAG_GET_GROUP(insn_spec.flags) > X86_INSN_SSE_GROUP_START) {
-    UNIMPLEMENTED();
+    int group_ndx = X86_INSN_FLAG_GET_SSE_GROUP(insn_spec.flags);
+
+    x86_insn_modrm_t modrm;
+    modrm.byte = peek_byte(rd);
+    int insn_ndx = modrm.reg;
+
+    x86_insn_spec_t *group_insn = NULL;
+    group_insn = &x86_insn_sse_groups_repz[group_ndx].insns[insn_ndx];
+
+    insn_spec.name = group_insn->name;
+    insn_spec.flags = group_insn->flags;
+
+    for (int i = 0; i < sizeof(insn_spec.operands) / sizeof(x86_insn_operand_spec_t); i++) {
+      x86_insn_operand_spec_t group_op = group_insn->operands[i];
+      if (group_op.data[0] != '_' && group_op.data[1] != '_') {
+        insn_spec.operands[i] = group_insn->operands[i];
+      }
+    }
+    DLOG(0, "[x86 sse decode] modrm_group_spec; group: %d, ins: %d, byte: %x; name: %s; flags: %d", group_ndx, insn_ndx,
+         modrm.byte, insn_spec.name, insn_spec.flags);
   }
 
   if (X86_INSN_FLAG_GET_GROUP(insn_spec.flags) > X86_INSN_GROUP_START &&
