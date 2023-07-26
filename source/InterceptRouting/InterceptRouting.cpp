@@ -65,7 +65,12 @@ void InterceptRouting::Active() {
   void *patch_address = NULL;
   patch_address = (void *)origin_->raw_instruction_start();
 
-  CodePatch(patch_address, (uint8_t *)trampoline_buffer_->getRawBuffer(), trampoline_buffer_->getSize());
+  MemoryOperationError ret = CodePatch(patch_address, (uint8_t *)trampoline_buffer_->getRawBuffer(), trampoline_buffer_->getSize());
+  if (ret != kMemoryOperationSuccess) {
+    DLOG(-1, "[intercept routing] Active patch %p failed", patch_address);
+    return;
+  }
+
   entry_->is_committed = true;
   DLOG(0, "[intercept routing] Active patch %p", patch_address);
 }
