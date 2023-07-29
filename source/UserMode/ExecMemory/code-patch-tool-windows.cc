@@ -150,14 +150,14 @@ static inline void *GetSyscallFunction_x64(uint32_t syscallNum) {
 
 static inline void *GetSyscallFunction_x86(uint32_t syscallNum) {
   uint8_t code[] = {
-      0x64, 0x8B, 0x0D, 0xC0, 0x00, 0x00, 0x00, // +0x00 -> mov ecx, dword ptr fs:[0xC0]
-      0x85, 0xC9,                               // +0x07 -> test ecx, ecx
-      0x75, 0x0A,                               // +0x09 -> jne _wow64
-	  0xBA, 0x00, 0x00, 0x00, 0x00,             // +0x0B -> mov edx, syscallNum
+    0x64, 0x8B, 0x0D, 0xC0, 0x00, 0x00, 0x00, // +0x00 -> mov ecx, dword ptr fs:[0xC0]
+    0x85, 0xC9,                               // +0x07 -> test ecx, ecx
+    0x75, 0x0A,                               // +0x09 -> jne _wow64
+    0xBA, 0x00, 0x00, 0x00, 0x00,             // +0x0B -> mov edx, syscallNum
 	  0xCD, 0x2E,                               // +0x10 -> int 0x2e
 	  0xC3,                                     // +0x12 -> ret
 	  0x33, 0xC9,                               // +0x13 -> xor ecx, ecx
-      0xB8, 0x00, 0x00, 0x00, 0x00,             // +0x15 -> mov eax, syscallNum (_wow64)
+    0xB8, 0x00, 0x00, 0x00, 0x00,             // +0x15 -> mov eax, syscallNum (_wow64)
 	  0x8D, 0x54, 0x24, 0x04,                   // +0x1A -> lea edx, [esp+0x04]
 	  0xFF, 0x11,                               // +0x1E -> call dword ptr [ecx]
 	  0xC3                                      // +0x20 -> ret
@@ -207,7 +207,7 @@ PUBLIC MemoryOperationError CodePatch(void *address, uint8_t *buffer, uint32_t b
   ret = NtProtectVirtualMemory(hProc, &addressPageAlign, &regionSize, newProtect, &oldProtect);
   if (ret != STATUS_SUCCESS) {
     ERROR_LOG("Error NtProtectVirtualMemory return 0x%X", ret);
-	  return kMemoryOperationError;
+    return kMemoryOperationError;
   }
 
   memcpy(address, buffer, buffer_size);
