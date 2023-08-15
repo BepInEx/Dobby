@@ -34,6 +34,19 @@ cmake ..
 make -j4
 ```
 
+## Build for Windows using MINGW
+
+```
+cd Dobby && mkdir build_for_windows_x64 && cd build_for_windows_x64
+
+cmake .. \
+-DCMAKE_BUILD_TYPE=Release \
+-DCMAKE_SYSTEM_NAME=Windows \
+-DCMAKE_SYSTEM_PROCESSOR=x64
+
+make -j4
+```
+
 ## Build for iOS / macOS
 
 #### Manual build for macOS X64 host
