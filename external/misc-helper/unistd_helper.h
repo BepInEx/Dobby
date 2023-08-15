@@ -15,6 +15,8 @@
 #define STDIN_FILENO 0
 #define STDOUT_FILENO 1
 #define STDERR_FILENO 2
+
+#ifndef _STDINT_H
 /* should be in some equivalent to <sys/types.h> */
 typedef __int8            int8_t;
 typedef __int16           int16_t; 
@@ -24,6 +26,7 @@ typedef unsigned __int8   uint8_t;
 typedef unsigned __int16  uint16_t;
 typedef unsigned __int32  uint32_t;
 typedef unsigned __int64  uint64_t;
+#endif // _STDINT_H
 
 #else
 
