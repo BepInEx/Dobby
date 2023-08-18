@@ -8,10 +8,13 @@
 #include "UnifiedInterface/platform.h"
 
 int GetProtectionFromMemoryPermission(MemoryPermission access) {
-  if (kReadWriteExecute == access)
-    return PAGE_EXECUTE_READWRITE;
-  else if (kReadExecute == access)
-    return PAGE_EXECUTE_READ;
+  switch (access) {
+    case kNoAccess:         return PAGE_NOACCESS;
+    case kRead:             return PAGE_READONLY;
+    case kReadWrite:        return PAGE_READWRITE;
+    case kReadWriteExecute: return PAGE_EXECUTE_READWRITE;
+    case kReadExecute:      return PAGE_EXECUTE_READ;
+  }
 }
 
 int OSMemory::AllocPageSize() {
