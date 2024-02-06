@@ -314,8 +314,6 @@ endif()
 
 
 if(FunctionWrapper OR DynamicBinaryInstrument)
-  message(STATUS "source/TrampolineBridge/ClosureTrampolineBridge/${arch1}/${ARCH1}AssemblyClosureTrampoline.cc")
-
   set(dobby.SOURCE_FILE_LIST ${dobby.SOURCE_FILE_LIST}
     # closure trampoline bridge
     source/TrampolineBridge/ClosureTrampolineBridge/common-bridge-handler.cc
