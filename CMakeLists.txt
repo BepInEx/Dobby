@@ -137,7 +137,7 @@ elseif(SYSTEM.Windows)
     if (NearBranch)
       set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /export:dobby_enable_near_branch_trampoline /export:dobby_disable_near_branch_trampoline")
     endif()
-  elseif(COMPILER.Gcc)
+  elseif(COMPILER.Gcc OR Compiler.Clang)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-rtti")
     # Enable unicode, Statically link libgcc/libstdc++
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -municode")
@@ -314,6 +314,8 @@ endif()
 
 
 if(FunctionWrapper OR DynamicBinaryInstrument)
+  message(STATUS "source/TrampolineBridge/ClosureTrampolineBridge/${arch1}/${ARCH1}AssemblyClosureTrampoline.cc")
+
   set(dobby.SOURCE_FILE_LIST ${dobby.SOURCE_FILE_LIST}
     # closure trampoline bridge
     source/TrampolineBridge/ClosureTrampolineBridge/common-bridge-handler.cc
@@ -504,4 +506,3 @@ if(SYSTEM.Darwin)
 endif()
 
 add_subdirectory(example)
-
