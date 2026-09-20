@@ -45,7 +45,9 @@ static int GenRelocateCodeFixed(void *buffer, AssemblyCodeChunk *origin, Assembl
       DLOG(0, "[x86 relo] jc rel8, %p", buffer_cursor);
 
       int8_t orig_offset = insn.immediate;
-      int new_offset = (int)(curr_orig_ip + orig_offset - curr_relo_ip);
+      // rel8 is relative to the original next IP, while the widened
+      // 0F 8x rel32 instruction is relative to a six-byte next IP.
+      int new_offset = (int)(curr_orig_ip + insn.length + orig_offset - (curr_relo_ip + 6));
       uint8_t opcode = 0x80 | (insn.primary_opcode & 0x0f);
 
       __ Emit8(0x0F);
